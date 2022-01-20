@@ -10,12 +10,14 @@ import cors from 'koa-cors';
 import koaBody from 'koa-bodyparser';
 const { Pool, Client } = require('pg');
 const date = require('date-and-time')
+const siteurl = 'https://cipayment.myshopify.com'
+
 
 const pool = new Pool({
-  user: "tis85",
+  user: "tis24",
   host: "127.0.0.1",
-  database: "tis85",
-  password: "TechAdmin911",
+  database: "tis24",
+  password: "TechAdmin",
   port: 5432,
 });
 
@@ -451,6 +453,57 @@ app.prepare().then(async () => {
   });
 
 
+
+
+    /**
+   * Success payment callback
+   */
+     router.post("/callback_cipayment/success", koaBody(), async (ctx) => {
+      if (!ctx.request.body) {
+        ctx.body = [{ 'message': 'No data here' }];
+      }
+      else{
+        ctx.body = "payment success";
+        ctx.status = 200;
+        const conditionget = ctx.params.object;    
+        console.log('Payment conditionget: ', conditionget);
+        console.log('Payment Detail: ', ctx.request.body);
+        console.log('Payment URL : ', siteurl+'?ref=success');
+        ctx.redirect(siteurl+'?ref=success');
+      
+      }
+    });
+
+ /**
+   * Success payment callback
+   */
+         router.post("/callback_cipayment/failed", koaBody(), async (ctx) => {
+          if (!ctx.request.body) {
+            ctx.body = [{ 'message': 'No data here' }];
+          }
+          else{
+            ctx.body = "payment fail";
+            ctx.status = 200;
+            const conditionget = ctx.params.object;    
+            console.log('Payment conditionget: ', conditionget);
+            console.log('Payment Detail: ', ctx.request.body);
+            console.log('Payment URL : ', siteurl+'?ref=fail');
+            ctx.redirect(siteurl+'?ref=fail');
+          
+          }
+        });
+
+/**
+   * Test
+   */
+ router.get("/Testget", async (ctx) => {
+  
+    ctx.body = "Test Success";
+    ctx.status = 200;
+    console.log('Test conditionget');
+  
+  
+});
 
   const corsOpts = {
     origin: '*',
