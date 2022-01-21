@@ -11,6 +11,7 @@ import koaBody from 'koa-bodyparser';
 const { Pool, Client } = require('pg');
 const date = require('date-and-time')
 const siteurl = 'https://cipayment.myshopify.com'
+var crypto = require('crypto');
 
 
 const pool = new Pool({
@@ -29,7 +30,11 @@ pool.connect(function (err) {
     console.log('Create Executed');
   });
 
-  pool.query("CREATE TABLE IF NOT EXISTS cigateway (id serial PRIMARY KEY, partnercode VARCHAR ( 255 ) NOT NULL, secretkey VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 255 ) NOT NULL, paymentmode VARCHAR ( 255 ), createddate TIMESTAMP NOT NULL, updateddate TIMESTAMP, status INT DEFAULT 0)", (err, res) => {
+  pool.query("CREATE TABLE IF NOT EXISTS cigateway (id serial PRIMARY KEY, partnercode VARCHAR ( 255 ) NOT NULL, secretkey VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 255 ) NOT NULL, paymentmode VARCHAR ( 255 ), createddate TIMESTAMP NOT NULL, updateddate TIMESTAMP, status INT DEFAULT 0, cipay_baseurl VARCHAR ( 255 ) NOT NULL)", (err, res) => {
+    console.log('Create CIpayment Table');
+  });
+
+  pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL)", (err, res) => {
     console.log('Create CIpayment Table');
   });
 
@@ -166,6 +171,7 @@ app.prepare().then(async () => {
     var PaymentMode = ctx.request.body.PaymentMode;
     var secretkey = ctx.request.body.SecretKey;
     var partnercode = ctx.request.body.PartnerCode;
+    var cipay_baseurl = ctx.request.body.Payurl;
     var status = "0";
     let paymentmode = '';
     if (PaymentMode == 'dev') {
@@ -178,7 +184,7 @@ app.prepare().then(async () => {
     var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
     pool.query("SELECT id FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = '" + paymentmode + "'", function (err, result) {
       if (result.rowCount === 0) {
-        pool.query("INSERT INTO cigateway(partnercode, secretkey, storeorigin, paymentmode, status, createddate)VALUES('" + partnercode + "', '" + secretkey + "', '" + CIShopOrigin + "', '" + paymentmode + "', '" + status + "', '" + dateTime + "')",
+        pool.query("INSERT INTO cigateway(partnercode, secretkey, storeorigin, paymentmode, status, createddate,cipay_baseurl)VALUES('" + partnercode + "', '" + secretkey + "', '" + CIShopOrigin + "', '" + paymentmode + "', '" + status + "', '" + dateTime + "', '" + cipay_baseurl + "')",
           (err, res) => {
             ctx.body = 'Inserted data successfully.';
             ctx.status = 200;
@@ -186,7 +192,7 @@ app.prepare().then(async () => {
           }
         );
       } else {
-        pool.query("UPDATE cigateway SET partnercode = '" + partnercode + "', secretkey = '" + secretkey + "', updateddate = '" + dateTime + "', status = '" + status + "' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = '" + paymentmode + "'", (err, res) => {
+        pool.query("UPDATE cigateway SET partnercode = '" + partnercode + "', secretkey = '" + secretkey + "', updateddate = '" + dateTime + "', status = '" + status + "', cipay_baseurl = '" + cipay_baseurl + "' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = '" + paymentmode + "'", (err, res) => {
 
         });
         ctx.body = 'Updated data successfully.';
@@ -227,7 +233,7 @@ app.prepare().then(async () => {
      
       let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
       var datas = "";
-      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='dev'");
+      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='dev'");
       if (results.rowCount > 0) {
         ctx.body = results;
         ctx.status = 200;
@@ -241,7 +247,7 @@ app.prepare().then(async () => {
       
       let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
       var datas = "";
-      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='live'");
+      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='live'");
       if (results.rowCount > 0) {
         ctx.body = results;
         ctx.status = 200;
@@ -403,7 +409,7 @@ app.prepare().then(async () => {
  /**
    * Retrive Order API to create new order
    */
-  router.get("/retrievesorder/:object", async (ctx) => {
+  router.post("/retrievesorder/:object", async (ctx) => {
     const orderid = ctx.params.object;
     const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
    if (result || result.rows) {
@@ -463,36 +469,118 @@ app.prepare().then(async () => {
         ctx.body = [{ 'message': 'No data here' }];
       }
       else{
+        const now = new Date();
+        var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
         ctx.body = "payment success";
         ctx.status = 200;
-        const conditionget = ctx.params.object;    
-        console.log('Payment conditionget: ', conditionget);
         console.log('Payment Detail: ', ctx.request.body);
-        console.log('Payment URL : ', siteurl+'?ref=success');
-        ctx.redirect(siteurl+'?ref=success');
-      
+
+        let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
+        let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
+        //let payloadString = 'currencyType=INR|orderReference=df415da7f2448c49a135ed22a8573866|txnAmount=58.98';
+        const hash = crypto.createHmac('sha256', secretKey)
+        .update(payloadString)
+        .digest('hex');
+        console.log('Payment Che : ', hash);
+        if(ctx.request.body.checkSum==hash)
+        {
+          
+          pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
+            console.log('Inserted payment data in DB');
+          });
+          ctx.redirect(siteurl+'?ref=success');
+        }else{
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', 'FAIL', '"+dateTime+"')", (err, res) => {
+          console.log('Inserted payment data in DB');
+        });
+          ctx.redirect(siteurl+'?ref=fail');
+        }
       }
     });
 
  /**
-   * Success payment callback
+   * fail payment callback
    */
          router.post("/callback_cipayment/failed", koaBody(), async (ctx) => {
           if (!ctx.request.body) {
             ctx.body = [{ 'message': 'No data here' }];
           }
           else{
+
+        const now = new Date();
+        var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
+          console.log('Inserted payment data in DB');
+        });
+
             ctx.body = "payment fail";
             ctx.status = 200;
             const conditionget = ctx.params.object;    
-            console.log('Payment conditionget: ', conditionget);
             console.log('Payment Detail: ', ctx.request.body);
-            console.log('Payment URL : ', siteurl+'?ref=fail');
             ctx.redirect(siteurl+'?ref=fail');
           
           }
         });
 
+
+
+    /**
+   * Create Order API to create new order
+   */
+     router.post("/gettingpaymentresponse", koaBody(), async (ctx) => {
+      if (!ctx.request.body) {
+        ctx.body = [{ 'message': 'no items in the cart' }];
+      }
+      const checkout_id = ctx.request.body.checkout_id;
+      const result = await pool.query("SELECT payment_status FROM ci_payment WHERE checkout_id = '"+checkout_id+"' ORDER BY id DESC LIMIT 1");
+      if (result.rowCount > 0) {
+        var PaymentStatus = result.rows[0]['payment_status'];       
+        ctx.body = PaymentStatus;
+        ctx.status = 200;
+      } else {
+        ctx.body = "NA";
+        ctx.status = 200;
+      }
+    });
+
+
+
+
+
+    /**
+   *  User get API to create new order
+   */
+     router.post("/getusers", async (ctx) => {
+    
+      const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
+      if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      
+      
+      // const data = await client.post({
+      //   path: 'orders/'+order_id+'/transactions',
+      //   data: ctx.request.body,
+      //   type: DataType.JSON,
+      // })
+
+      const data = await client.get({
+        path: 'users/current',
+      })
+      .then(data => {
+          return data;
+        });
+      ctx.body = data;
+      ctx.status = 200;
+      console.log('user  detail data +++++++++++++++++++', data);
+    } else {
+      ctx.body = [{ 'message': 'You are not authorised!' }];
+      console.log('user  detail no login');
+      ctx.status = 200;
+    }
+     
+    });
 /**
    * Test
    */

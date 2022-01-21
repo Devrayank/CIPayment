@@ -11,18 +11,18 @@ function Index(props){
   
   var [SecretLive, setSecretLive] = useState('');
   var [PartnerLive, setPartnerlive] = useState('');
-  
-
 
   var [sett, setSett] = useState(true);
   var [paymen, setPayment] = useState(false);  
 
   var [secre1, setSecre1] = useState();
   var [part1, setPartn1] = useState();
+  var [payurl1, setpayurl1] = useState();
 
   var [secre2, setSecre2] = useState();
   var [part2, setPartn2] = useState();
-
+  var [payurl2, setpayurl2] = useState();
+  
   var [toog, settoog] = useState();
 
   var [devl, setDevl] = useState(true);
@@ -80,18 +80,19 @@ function Index(props){
       let requestdata ={}
       let requestdatalive ={}
       if(paymentMode == 'live' ) { 
-      requestdatalive = {'SecretKey': secre2, 'PartnerCode': part2, 'PaymentMode': paymentMode };
+      requestdatalive = {'SecretKey': secre2, 'PartnerCode': part2, 'PaymentMode': paymentMode,'Payurl': payurl2 };
       const res = await props.axios_instance.post("/PaymentGatewaySetting", requestdatalive)
-       // setPaymentMode()
+     // console.log("1",requestdatalive);
        toast.success(res.data)
       } 
       else {  
        
-      requestdata = {'SecretKey': secre1, 'PartnerCode': part1, 'PaymentMode': paymentMode };
-          const res = await props.axios_instance.post("/PaymentGatewaySetting", requestdata)
-        console.log(res.data);
+      requestdata = {'SecretKey': secre1, 'PartnerCode': part1, 'PaymentMode': paymentMode ,'Payurl': payurl1};
+        const res = await props.axios_instance.post("/PaymentGatewaySetting", requestdata)
+       // console.log(res.data);
+       // console.log("2",requestdata);
         toast.success(res.data);
-      }
+      } 
 }
 
   function live1(e) {
@@ -116,7 +117,7 @@ function Index(props){
 
   async function SetCIAccessToken(){
     const res =await props.axios_instance.post("/setaccesstoken");
-    console.log("Teswt >>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<", res)
+    //console.log("Teswt >>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<", res)
     return res;
   }  
 
@@ -127,7 +128,7 @@ function Index(props){
 
   async function handleClick() {
     const result = await getProducts();
-    console.log('Here are the products - ', result);
+   // console.log('Here are the products - ', result);
   }
 
   async function getProductListings(){
@@ -159,24 +160,26 @@ function Index(props){
           let data = resparam.data.rows
         data = data.filter(function(item){
 
-          console.log(item.paymentmode);
+          //console.log(item.paymentmode);
           return item.paymentmode == 'dev';
-        }).map(function({id, partnercode, paymentmode, secretkey }){
-            return {id, partnercode, paymentmode, secretkey};
+        }).map(function({id, partnercode, paymentmode, secretkey,cipay_baseurl }){
+            return {id, partnercode, paymentmode, secretkey,cipay_baseurl};
         });
         setPartn1(data[0].partnercode)
         setSecre1(data[0].secretkey);
+        setpayurl1(data[0].cipay_baseurl);
     }
 
       if(resparamlive.data != 'no data found'){
         let datalive = resparamlive.data.rows
         datalive = datalive.filter(function(item){
           return item.paymentmode == 'live';
-        }).map(function({id, partnercode, paymentmode, secretkey }){
-            return {id, partnercode, paymentmode, secretkey};
+        }).map(function({id, partnercode, paymentmode, secretkey,cipay_baseurl }){
+            return {id, partnercode, paymentmode, secretkey,cipay_baseurl};
         });
         setPartn2(datalive[0].secretkey)
         setSecre2(datalive[0].partnercode)
+        setpayurl2(datalive[0].cipay_baseurl);
     }
 
   } 
@@ -226,6 +229,10 @@ function Index(props){
                       <label for="exampleInputPassword1">Partner Code</label>
                       <input type="text" required={true} className="form-control" id="exampleInputPassword1" onChange={(e) => setPartn1(e.target.value)} minlength="10" value={part1} />
                     </div>
+                    <div className="form-group">
+                      <label for="exampleInputPassword1">CIPay Base URL</label>
+                      <input type="text" required={true} className="form-control" id="exampleInputPassword1" onChange={(e) => setpayurl1(e.target.value)} minlength="5" value={payurl1} />
+                    </div>
                     <div className="form-group form-check">
                        <input type="hidden" value="development" onChange={()=>setPaymentMode("dev") } />
 
@@ -254,6 +261,12 @@ function Index(props){
                       <label for="exampleInputPassword1">Partner Code</label>
                       <input type="text" required={true} className="form-control" id="exampleInputPassword1" onChange={(e) => setPartn2(e.target.value)} minlength="10" value={part2}/>
                     </div>
+
+                    <div className="form-group">
+                      <label for="exampleInputPassword1">CIPay Base URL</label>
+                      <input type="text" required={true} className="form-control" id="exampleInputPassword1" onChange={(e) => setpayurl2(e.target.value)} minlength="5" value={payurl2} />
+                    </div>
+
                     <div className="form-group form-check">
                     <input type="hidden" value="live" onChange={()=>setPaymentMode("live") } />
 
