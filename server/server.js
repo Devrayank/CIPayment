@@ -10,7 +10,7 @@ import cors from 'koa-cors';
 import koaBody from 'koa-bodyparser';
 const { Pool, Client } = require('pg');
 const date = require('date-and-time')
-const siteurl = 'https://cipayment.myshopify.com'
+const siteurl = 'https://cipayment.myshopify.com/cart'
 var crypto = require('crypto');
 
 
@@ -481,10 +481,12 @@ app.prepare().then(async () => {
         const hash = crypto.createHmac('sha256', secretKey)
         .update(payloadString)
         .digest('hex');
-        console.log('Payment Che : ', hash);
+
+        //console.log('payloadString Che : ', payloadString);
+
+       // console.log('Payment Che : ', hash);
         if(ctx.request.body.checkSum==hash)
         {
-          
           pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
             console.log('Inserted payment data in DB');
           });
@@ -493,7 +495,7 @@ app.prepare().then(async () => {
         pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', 'FAIL', '"+dateTime+"')", (err, res) => {
           console.log('Inserted payment data in DB');
         });
-          ctx.redirect(siteurl+'?ref=fail');
+          ctx.redirect(siteurl+'?ref=success');
         }
       }
     });
@@ -543,44 +545,6 @@ app.prepare().then(async () => {
       }
     });
 
-
-
-
-
-    /**
-   *  User get API to create new order
-   */
-     router.post("/getusers", async (ctx) => {
-    
-      const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
-      if (result || result.rows) {
-      let authtoken = result.rows[0]['authtoken'];
-
-      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-      
-      
-      // const data = await client.post({
-      //   path: 'orders/'+order_id+'/transactions',
-      //   data: ctx.request.body,
-      //   type: DataType.JSON,
-      // })
-
-      const data = await client.get({
-        path: 'users/current',
-      })
-      .then(data => {
-          return data;
-        });
-      ctx.body = data;
-      ctx.status = 200;
-      console.log('user  detail data +++++++++++++++++++', data);
-    } else {
-      ctx.body = [{ 'message': 'You are not authorised!' }];
-      console.log('user  detail no login');
-      ctx.status = 200;
-    }
-     
-    });
 /**
    * Test
    */
