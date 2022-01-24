@@ -435,8 +435,8 @@ app.prepare().then(async () => {
       ctx.body = [{ 'message': 'no items in the cart' }];
     }
      const order_id = ctx.request.body.transaction.order_id;
-     console.log("Transaction id +++++++++++++  ", order_id);
-     console.log("Transaction >>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<< ", ctx.request.body);
+    // console.log("Transaction id +++++++++++++  ", order_id);
+    // console.log("Transaction >>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<< ", ctx.request.body);
 
     const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
     if (result || result.rows) {
@@ -451,7 +451,7 @@ app.prepare().then(async () => {
         });
       ctx.body = data;
       ctx.status = 200;
-      console.log('orderTrdata  created data', data);
+      //console.log('orderTrdata  created data', data);
     } else {
       ctx.body = [{ 'message': 'You are not authorised!' }];
       ctx.status = 200;
@@ -474,19 +474,16 @@ app.prepare().then(async () => {
         ctx.body = "payment success";
         ctx.status = 200;
         console.log('Payment Detail: ', ctx.request.body);
-
         let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
-        let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
-        //let payloadString = 'currencyType=INR|orderReference=df415da7f2448c49a135ed22a8573866|txnAmount=58.98';
+        //let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
+        let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|paymentRef='+ctx.request.body.paymentRef+'|paymentRemarks='+ctx.request.body.paymentRemarks+'|paymentStatus='+ctx.request.body.paymentStatus+'|txnAmount='+ctx.request.body.txnAmount+'';
         const hash = crypto.createHmac('sha256', secretKey)
         .update(payloadString)
         .digest('hex');
-
-        //console.log('payloadString Che : ', payloadString);
-
+       // console.log('payloadString Che : ', payloadString);
        // console.log('Payment Che : ', hash);
-        if(ctx.request.body.checkSum==hash)
-        {
+        if(ctx.request.body.checkSum==hash) 
+        { 
           pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
             console.log('Inserted payment data in DB');
           });
@@ -495,7 +492,7 @@ app.prepare().then(async () => {
         pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', 'FAIL', '"+dateTime+"')", (err, res) => {
           console.log('Inserted payment data in DB');
         });
-          ctx.redirect(siteurl+'?ref=success');
+          ctx.redirect(siteurl+'?ref=fail');
         }
       }
     });
@@ -548,7 +545,25 @@ app.prepare().then(async () => {
 /**
    * Test
    */
- router.get("/Testget", async (ctx) => {
+ router.post("/Testget", async (ctx) => {
+
+
+  let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
+ // let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
+ 
+ let payloadString = 'currencyType=INR|orderReference=e068ff60868d84a608bb5b84e2409101|paymentRef=627F08E71643009459236|paymentRemarks=Completed successfully|paymentStatus=SUCCESS|txnAmount=76.62';
+  
+ //checksum=LowerCase(Hex(HMAC_SHA256(payloadString,secretKey)));
+ 
+ 
+ const hash = crypto.createHmac('sha256', secretKey)
+  .update(payloadString)
+  .digest('hex');
+  console.log('payloadString Che : ', payloadString);
+  console.log('Payment Che : ', hash);
+  
+
+  
   
     ctx.body = "Test Success";
     ctx.status = 200;
