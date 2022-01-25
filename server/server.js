@@ -88,20 +88,13 @@ app.prepare().then(async () => {
             delete ACTIVE_SHOPIFY_SHOPS[shop],
         });
 
-        if (!response.success) {
+        if (!response.success) {  
           console.log(
             `Failed to register APP_UNINSTALLED webhook: ${response.result}`
           );
         }
-
         // Redirect to app with shop parameter upon auth
         ctx.redirect(`/?shop=${shop}&host=${host}`);
-
-        console.log("asasasasasasas1" ,ACTIVE_SHOPIFY_SHOPS[shop]);
-        console.log("asasasasasasas2" ,ACTIVE_SHOPIFY_SHOPS["shopOrigin"] = shop);
-        console.log("asasasasasasas3" ,ACTIVE_SHOPIFY_SHOPS["accessToken"] = accessToken);
-        console.log("asasasasasasas4" ,shop);
-
       },
     })
   );
@@ -165,8 +158,8 @@ app.prepare().then(async () => {
   /**
    * Save Payment gateway Setting
    */
-   router.post("/PaymentGatewaySetting", koaBody(), async (ctx) => {
-    
+  router.post("/PaymentGatewaySetting", koaBody(), async (ctx) => {
+
     let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
     var PaymentMode = ctx.request.body.PaymentMode;
     var secretkey = ctx.request.body.SecretKey;
@@ -176,7 +169,7 @@ app.prepare().then(async () => {
     let paymentmode = '';
     if (PaymentMode == 'dev') {
       paymentmode = 'dev';
-    }else {
+    } else {
       paymentmode = 'live';
     }
     const now = new Date();
@@ -206,104 +199,104 @@ app.prepare().then(async () => {
   });
 
 
-   /**
-    * Save Payment status
-    */
-    router.post("/PaymentGatewayStatus", koaBody(), async (ctx) => {
-      let Paymentcheckstatus = ctx.request.body.statussets;
-      let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
-      if (Paymentcheckstatus == '1') {
-        pool.query("UPDATE cigateway SET status = '1' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'live'", (err, res) => {
-        });
-        pool.query("UPDATE cigateway SET status = '0' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'dev'", (err, res) => {
-        });
-      } else {
-        pool.query("UPDATE cigateway SET status = '0' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'live'", (err, res) => {
-        });
-        pool.query("UPDATE cigateway SET status = '1' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'dev'", (err, res) => {
-        });
-      }
-      ctx.body = 'PaymentGatewaySetting status is Working';
+  /**
+   * Save Payment status
+   */
+  router.post("/PaymentGatewayStatus", koaBody(), async (ctx) => {
+    let Paymentcheckstatus = ctx.request.body.statussets;
+    let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
+    if (Paymentcheckstatus == '1') {
+      pool.query("UPDATE cigateway SET status = '1' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'live'", (err, res) => {
+      });
+      pool.query("UPDATE cigateway SET status = '0' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'dev'", (err, res) => {
+      });
+    } else {
+      pool.query("UPDATE cigateway SET status = '0' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'live'", (err, res) => {
+      });
+      pool.query("UPDATE cigateway SET status = '1' WHERE storeorigin = '" + CIShopOrigin + "' AND paymentmode = 'dev'", (err, res) => {
+      });
+    }
+    ctx.body = 'PaymentGatewaySetting status is Working';
+    ctx.status = 200;
+  });
+
+
+
+  router.post("/ModeDeveloper", async (ctx) => {
+
+    let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
+    var datas = "";
+    const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='dev'");
+    if (results.rowCount > 0) {
+      ctx.body = results;
       ctx.status = 200;
-    });
+    } else {
+      ctx.body = "no data found";
+      ctx.status = 200;
+    }
+
+  });
+  router.post("/Modelive", async (ctx) => {
+
+    let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
+    var datas = "";
+    const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='live'");
+    if (results.rowCount > 0) {
+      ctx.body = results;
+      ctx.status = 200;
+    } else {
+      ctx.body = "no data found";
+      ctx.status = 200;
+    }
+  });
 
 
-
-    router.post("/ModeDeveloper", async (ctx) => {
-     
-      let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
-      var datas = "";
-      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='dev'");
-      if (results.rowCount > 0) {
-        ctx.body = results;
-        ctx.status = 200;
-      } else {
-        ctx.body = "no data found";
-        ctx.status = 200;
-      }
-  
-    });
-    router.post("/Modelive", async (ctx) => {
-      
-      let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
-      var datas = "";
-      const results = await pool.query("SELECT paymentmode,id,partnercode,secretkey,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and paymentmode='live'");
-      if (results.rowCount > 0) {
-        ctx.body = results;
-        ctx.status = 200;
-      } else {
-        ctx.body = "no data found";
-        ctx.status = 200;
-      }
-    });
+  router.post("/TooglbuttGet", async (ctx) => {
+    let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
+    const resulttoggle = await pool.query("SELECT paymentmode,status FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1' and paymentmode='live'");
+    if (resulttoggle.rowCount > 0) {
+      console.log("Pay mode live status : ", resulttoggle.rows);
+      ctx.body = resulttoggle.rows;
+      ctx.status = 200;
+    } else {
+      ctx.body = "no data found";
+      ctx.status = 200;
+    }
+  });
 
 
-    router.post("/TooglbuttGet", async (ctx) => {
-      let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
-      const resulttoggle = await pool.query("SELECT paymentmode,status FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1' and paymentmode='live'");
-      if (resulttoggle.rowCount > 0) {
-        console.log("Pay mode live status : ", resulttoggle.rows);
-        ctx.body = resulttoggle.rows;
-        ctx.status = 200;
-      } else {
-        ctx.body = "no data found";
-        ctx.status = 200;
-      }
-    });
+  router.post("/CalculateShipping/:object", async (ctx) => {
+    // console.log('Calculate Shipping', ctx.params.object);
+    const shippingToken = ctx.params.object;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      //console.log('authtoken ====================== ', authtoken);
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const data = await client.get({
+        path: 'checkouts/' + shippingToken + '/shipping_rates',
+      })
+        .then(data => {
+          ctx.body = data;
+          ctx.status = 200;
+        });
+    } else {
+      ctx.body = [];
+      ctx.status = 200;
+    }
+  });
 
 
-    router.post("/CalculateShipping/:object", async (ctx) => {
-      // console.log('Calculate Shipping', ctx.params.object);
-       const shippingToken = ctx.params.object;    
-       const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
-       if (result || result.rows) {
-         let authtoken = result.rows[0]['authtoken'];
-         //console.log('authtoken ====================== ', authtoken);
-         const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-         const data = await client.get({
-           path: 'checkouts/' + shippingToken + '/shipping_rates',
-         })
-           .then(data => {
-             ctx.body = data;
-             ctx.status = 200;
-           });
-       } else {
-         ctx.body = [];
-         ctx.status = 200;
-       }
-     });
-
-
-     router.post("/retrievescheckout/:object", async (ctx) => {
-      //console.log('Get details Shipping', ctx.params.object);
-      const shippingToken = ctx.params.object;   
-      const Checkout_token = ctx.params.object;
-      const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
+  router.post("/retrievescheckout/:object", async (ctx) => {
+    //console.log('Get details Shipping', ctx.params.object);
+    const shippingToken = ctx.params.object;
+    const Checkout_token = ctx.params.object;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
     if (result || result.rows) {
       let authtoken = result.rows[0]['authtoken'];
       const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
       const dataret = await client.get({
-        path: 'checkouts/'+Checkout_token,
+        path: 'checkouts/' + Checkout_token,
       })
         .then(data => {
           ctx.body = data;
@@ -319,136 +312,136 @@ app.prepare().then(async () => {
   /**
    * Checkout API to Generate Checkout ID (token)
    */
-   router.post("/CICheckout", koaBody(), async (ctx) => {
+  router.post("/CICheckout", koaBody(), async (ctx) => {
     console.log('inside checkout data here');
     if (!ctx.request.body) {
       ctx.body = [{ 'message': 'no items in the cart' }];
     }
     const checkoutData1 = ctx.request.body;
     const lineItems = checkoutData1.line_items;
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
     if (result || result.rows) {
       console.log('inside rows if');
       let authtoken = result.rows[0]['authtoken'];
       const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
       const checkoutdata = await client.post({
         path: 'checkouts',
-        data: checkoutData1,        
+        data: checkoutData1,
         type: DataType.JSON
       })
-      .then(data => {
-        ctx.body = data;
-        ctx.status = 200;
-      });
+        .then(data => {
+          ctx.body = data;
+          ctx.status = 200;
+        });
     } else {
       ctx.body = [{ 'message': 'You are not authorised!' }];
       ctx.status = 200;
     }
-   
+
   });
 
 
-    /**
-   * Create Order API to create new order
-   */
-     router.post("/CIOrder", koaBody(), async (ctx) => {
-      if (!ctx.request.body) {
-        ctx.body = [{ 'message': 'no items in the cart' }];
-      }
-      const lineItems = ctx.request.body.order.lineitems;
-      const tags = ctx.request.body.order.tags;
-      const tax_lines = ctx.request.body.order.tax_lines;
-      const current_total_tax = ctx.request.body.order.current_total_tax;
-      const shipping_address = ctx.request.body.order.shipping_address;
-      const phone = ctx.request.body.order.shipping_address.phone;
-      const total_shipping_price_set = ctx.request.body.order.total_shipping_price_set;
-      const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
-      if (result || result.rows) {
-        let authtoken = result.rows[0]['authtoken'];
-        const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-        const orderdata = await client.post({
-          path: 'orders',
-          data: {
-               "order":ctx.request.body.order
-          },            
-          type: DataType.JSON
-        })
-          .then(data => {
-            return data;
-          });
-        ctx.body = orderdata;
+  /**
+ * Create Order API to create new order
+ */
+  router.post("/CIOrder", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'no items in the cart' }];
+    }
+    const lineItems = ctx.request.body.order.lineitems;
+    const tags = ctx.request.body.order.tags;
+    const tax_lines = ctx.request.body.order.tax_lines;
+    const current_total_tax = ctx.request.body.order.current_total_tax;
+    const shipping_address = ctx.request.body.order.shipping_address;
+    const phone = ctx.request.body.order.shipping_address.phone;
+    const total_shipping_price_set = ctx.request.body.order.total_shipping_price_set;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const orderdata = await client.post({
+        path: 'orders',
+        data: {
+          "order": ctx.request.body.order
+        },
+        type: DataType.JSON
+      })
+        .then(data => {
+          return data;
+        });
+      ctx.body = orderdata;
+      ctx.status = 200;
+    } else {
+      ctx.body = [{ 'message': 'You are not authorised!' }];
+      ctx.status = 200;
+    }
+  });
+
+
+
+  /**
+* Retrive Discount rules
+*/
+  router.get("/retrievesdiscount", async (ctx) => {
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const data = await client.get({
+        path: 'price_rules',
+      }).then(data => {
+        ctx.body = data;
         ctx.status = 200;
-      } else {
-        ctx.body = [{ 'message': 'You are not authorised!' }];
-        ctx.status = 200;
-      }
-    });
+      });
+    } else {
+      ctx.body = erroe;
+      ctx.status = 200;
+    }
+  });
 
-
-
-     /**
-   * Retrive Discount rules
-   */
-   router.get("/retrievesdiscount", async (ctx) => {
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
-   if (result || result.rows) {
-     let authtoken = result.rows[0]['authtoken'];
-     const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-     const data = await client.get({
-       path: 'price_rules',
-     }).then(data => {
-         ctx.body = data;
-         ctx.status = 200;
-       });
-   } else {
-     ctx.body = erroe;
-     ctx.status = 200;
-   }
- });
-
- /**
-   * Retrive Order API to create new order
-   */
+  /**
+    * Retrive Order API to create new order
+    */
   router.post("/retrievesorder/:object", async (ctx) => {
     const orderid = ctx.params.object;
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
-   if (result || result.rows) {
-     let authtoken = result.rows[0]['authtoken'];
-     const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-     const data = await client.get({
-       path: 'orders/'+orderid,
-     }).then(data => {
-         ctx.body = data;
-         ctx.status = 200;
-       });
-   } else {
-     ctx.body = [];
-     ctx.status = 200;
-   }
- });
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const data = await client.get({
+        path: 'orders/' + orderid,
+      }).then(data => {
+        ctx.body = data;
+        ctx.status = 200;
+      });
+    } else {
+      ctx.body = [];
+      ctx.status = 200;
+    }
+  });
 
   /**
    * Create Transaction API to create new order
    */
-   router.post("/CITransaction", koaBody(), async (ctx) => {
+  router.post("/CITransaction", koaBody(), async (ctx) => {
     if (!ctx.request.body) {
       ctx.body = [{ 'message': 'no items in the cart' }];
     }
-     const order_id = ctx.request.body.transaction.order_id;
+    const order_id = ctx.request.body.transaction.order_id;
     // console.log("Transaction id +++++++++++++  ", order_id);
     // console.log("Transaction >>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<< ", ctx.request.body);
 
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '"+process.env.SHOP+"' ORDER BY id DESC LIMIT 1");
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
     if (result || result.rows) {
       let authtoken = result.rows[0]['authtoken'];
       const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
       const data = await client.post({
-        path: 'orders/'+order_id+'/transactions',
+        path: 'orders/' + order_id + '/transactions',
         data: ctx.request.body,
         type: DataType.JSON,
       }).then(data => {
-          return data;
-        });
+        return data;
+      });
       ctx.body = data;
       ctx.status = 200;
       //console.log('orderTrdata  created data', data);
@@ -461,116 +454,220 @@ app.prepare().then(async () => {
 
 
 
-    /**
-   * Success payment callback
-   */
-     router.post("/callback_cipayment/success", koaBody(), async (ctx) => {
-      if (!ctx.request.body) {
-        ctx.body = [{ 'message': 'No data here' }];
-      }
-      else{
-        const now = new Date();
-        var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
-        ctx.body = "payment success";
-        ctx.status = 200;
-        console.log('Payment Detail: ', ctx.request.body);
-        let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
-        //let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
-        let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|paymentRef='+ctx.request.body.paymentRef+'|paymentRemarks='+ctx.request.body.paymentRemarks+'|paymentStatus='+ctx.request.body.paymentStatus+'|txnAmount='+ctx.request.body.txnAmount+'';
-        const hash = crypto.createHmac('sha256', secretKey)
+  /**
+ * Success payment callback
+ */
+  router.post("/callback_cipayment/success", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'No data here' }];
+    }
+    else {
+      const now = new Date();
+      var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
+      ctx.body = "payment success";
+      ctx.status = 200;
+      console.log('Payment Detail: ', ctx.request.body);
+      let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
+      let payloadString = 'currencyType=' + ctx.request.body.currencyType + '|orderReference=' + ctx.request.body.orderReference + '|paymentRef=' + ctx.request.body.paymentRef + '|paymentRemarks=' + ctx.request.body.paymentRemarks + '|paymentStatus=' + ctx.request.body.paymentStatus + '|txnAmount=' + ctx.request.body.txnAmount + '';
+      const hash = crypto.createHmac('sha256', secretKey)
         .update(payloadString)
         .digest('hex');
-       // console.log('payloadString Che : ', payloadString);
-       // console.log('Payment Che : ', hash);
-        if(ctx.request.body.checkSum==hash) 
-        { 
-          pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
-            console.log('Inserted payment data in DB');
-          });
-          ctx.redirect(siteurl+'?ref=success');
-        }else{
-        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', 'FAIL', '"+dateTime+"')", (err, res) => {
+      if (ctx.request.body.checkSum == hash) {
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "')", (err, res) => {
           console.log('Inserted payment data in DB');
         });
-          ctx.redirect(siteurl+'?ref=fail');
-        }
+        ctx.body = "payment success response ++++++++++";
+        ctx.redirect(siteurl + '?ref=success');
+      } else {
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', 'FAIL', '" + dateTime + "')", (err, res) => {
+          console.log('Inserted payment data in DB');
+        });
+        ctx.redirect(siteurl + '?ref=fail');
       }
-    });
+    }
+  });
+
+  /**
+    * fail payment callback
+    */
+  router.post("/callback_cipayment/failed", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'No data here' }];
+    }
+    else {
+
+      const now = new Date();
+      var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
+      pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "')", (err, res) => {
+        console.log('Inserted payment data in DB');
+      });
+
+      ctx.body = "payment fail";
+      ctx.status = 200;
+      const conditionget = ctx.params.object;
+      console.log('Payment Detail: ', ctx.request.body);
+      ctx.redirect(siteurl + '?ref=fail');
+
+    }
+  });
+
+
+
+  /**
+ * Create Order API to create new order
+ */
+  router.post("/gettingpaymentresponse", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'no items in the cart' }];
+    }
+    const checkout_id = ctx.request.body.checkout_id;
+    const result = await pool.query("SELECT payment_status FROM ci_payment WHERE checkout_id = '" + checkout_id + "' ORDER BY id DESC LIMIT 1");
+    if (result.rowCount > 0) {
+      var PaymentStatus = result.rows[0]['payment_status'];
+      ctx.body = PaymentStatus;
+      ctx.status = 200;
+    } else {
+      ctx.body = "NA";
+      ctx.status = 200;
+    }
+  });
+
+
+  /**
+   * Order cancle API to create new order
+   */
+  router.post("/ordercancel", koaBody(), async (ctx) => {
+    // if (!ctx.request.body) {
+    //   ctx.body = [{ 'message': 'no items in the cart' }];
+    // }
+    //const order_id = ctx.request.body.order_id;
+    const order_id = 4649912008925;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const data = await client.post({
+        path: 'orders/' + order_id + '/cancel',
+        data: {},
+        type: DataType.JSON,
+      }).then(data => {
+        return data;
+      });
+      ctx.body = data;
+      ctx.status = 200;
+      console.log("Refund Data", data)
+    } else {
+      ctx.body = [{ 'message': 'You are not authorised!' }];
+      ctx.status = 200;
+      console.log("Refund not created",)
+    }
+  });
 
  /**
-   * fail payment callback
+   * Refund API to create new order
    */
-         router.post("/callback_cipayment/failed", koaBody(), async (ctx) => {
-          if (!ctx.request.body) {
-            ctx.body = [{ 'message': 'No data here' }];
-          }
-          else{
+  router.post("/calculaterefund", koaBody(), async (ctx) => {
+    // if (!ctx.request.body) {
+    //   ctx.body = [{ 'message': 'no items in the cart' }];
+    // }
+    //const order_id = ctx.request.body.order_id;
+    const order_id = 4650029875421;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
 
-        const now = new Date();
-        var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
-        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('"+ctx.request.body.orderReference+"', '"+ctx.request.body.paymentStatus+"', '"+dateTime+"')", (err, res) => {
-          console.log('Inserted payment data in DB');
-        });
+      const data = await client.post({
+        path: 'orders/4650029875421/refunds/calculate',
+        data: {"refund":{
+          "shipping":{
+            "full_refund":true
+          },
+          "refund_line_items":[{
+            "line_item_id":42330181533917,
+            "quantity":1,
+            "restock_type":"no_restock"
+          }]}},
+        type: DataType.JSON,
+      }).then(data => {
+        return data;
+      });
+      ctx.body = data;
+      ctx.status = 200;
+    } else {
+      ctx.body = [{ 'message': 'You are not authorised!' }];
+      ctx.status = 200;
+    }
+  });
 
-            ctx.body = "payment fail";
-            ctx.status = 200;
-            const conditionget = ctx.params.object;    
-            console.log('Payment Detail: ', ctx.request.body);
-            ctx.redirect(siteurl+'?ref=fail');
-          
-          }
-        });
-
-
-
-    /**
-   * Create Order API to create new order
+  /**
+   * Refund API to create new order
    */
-     router.post("/gettingpaymentresponse", koaBody(), async (ctx) => {
-      if (!ctx.request.body) {
-        ctx.body = [{ 'message': 'no items in the cart' }];
-      }
-      const checkout_id = ctx.request.body.checkout_id;
-      const result = await pool.query("SELECT payment_status FROM ci_payment WHERE checkout_id = '"+checkout_id+"' ORDER BY id DESC LIMIT 1");
-      if (result.rowCount > 0) {
-        var PaymentStatus = result.rows[0]['payment_status'];       
-        ctx.body = PaymentStatus;
-        ctx.status = 200;
-      } else {
-        ctx.body = "NA";
-        ctx.status = 200;
-      }
-    });
+  router.post("/refund", koaBody(), async (ctx) => {
 
-/**
-   * Test
-   */
- router.post("/Testget", async (ctx) => {
+    console.log("Refaunf using webhook hitting.............................. <<<<<<>>>>>>>>>>>>>>>>")
+    // if (!ctx.request.body) {
+    //   ctx.body = [{ 'message': 'no items in the cart' }];
+    // }
+    //const order_id = ctx.request.body.order_id;
+
+    console.log("Json data >>>>>>>>>>>>>>>>>>>>> ", ctx.request.body)
+
+    const order_id = 4650029875421;
+    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+    if (result || result.rows) {
+      let authtoken = result.rows[0]['authtoken'];
+      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+      const data = await client.post({
+        path: 'orders/'+order_id+'/refunds',
+        data: {"refund":{
+          "currency":"INR",
+          "notify":true,
+          "note":"wrong size",
+          "shipping":{
+            "full_refund":true
+          },
+          "refund_line_items":[{
+            "line_item_id":11936824459485,
+            "quantity":1,
+            "restock_type":"return",
+            "location_id":67329261789
+          }],"transactions":[{
+            "parent_id":5436544909533,
+            "amount":21.23,
+            "kind":"refund",
+            "gateway":"CIPay Gateway"
+          }]}},
+        type: DataType.JSON,
+      }).then(data => {
+        return data;
+      });
+      ctx.body = data;
+      ctx.status = 200;
+    } else {
+      ctx.body = [{ 'message': 'You are not authorised!' }];
+      ctx.status = 200;
+    }
+  });
+
+  /**
+     * Test
+     */
+  router.post("/Testget", koaBody(), async (ctx) => {
+
+    const data = {
+      id: 123,
+      secretKey: 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9TEST'
+    }
 
 
-  let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
- // let payloadString = 'currencyType='+ctx.request.body.currencyType+'|orderReference='+ctx.request.body.orderReference+'|txnAmount='+ctx.request.body.txnAmount+'';
- 
- let payloadString = 'currencyType=INR|orderReference=e068ff60868d84a608bb5b84e2409101|paymentRef=627F08E71643009459236|paymentRemarks=Completed successfully|paymentStatus=SUCCESS|txnAmount=76.62';
-  
- //checksum=LowerCase(Hex(HMAC_SHA256(payloadString,secretKey)));
- 
- 
- const hash = crypto.createHmac('sha256', secretKey)
-  .update(payloadString)
-  .digest('hex');
-  console.log('payloadString Che : ', payloadString);
-  console.log('Payment Che : ', hash);
-  
-
-  
-  
-    ctx.body = "Test Success";
+    ctx.body = data;
     ctx.status = 200;
     console.log('Test conditionget');
-  
-  
-});
+    //ctx.redirect(siteurl+'?ref=success');
+
+
+  });
 
   const corsOpts = {
     origin: '*',
