@@ -34,7 +34,7 @@ pool.connect(function (err) {
     console.log('Create CIpayment Table');
   });
 
-  pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL)", (err, res) => {
+  pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL, currencyType VARCHAR ( 255 ), orderReference VARCHAR ( 255 ), paymentRemarks VARCHAR ( 255 ), checkSum VARCHAR ( 255 ), txnAmount VARCHAR ( 255 ), paymentRef VARCHAR ( 255 ))", (err, res) => {
     console.log('Create CIpayment Table');
   });
 
@@ -473,13 +473,13 @@ app.prepare().then(async () => {
         .update(payloadString)
         .digest('hex');
       if (ctx.request.body.checkSum == hash) {
-        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "')", (err, res) => {
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate,currencyType,orderReference,paymentRemarks,checkSum,txnAmount,paymentRef) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "', '" + ctx.request.body.currencyType + "', '" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentRemarks + "', '" + ctx.request.body.checkSum + "', '" + ctx.request.body.txnAmount + "', '" + ctx.request.body.paymentRef + "')", (err, res) => {
           console.log('Inserted payment data in DB');
         });
         ctx.body = "payment success response ++++++++++";
         ctx.redirect(siteurl + '?ref=success');
       } else {
-        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', 'FAIL', '" + dateTime + "')", (err, res) => {
+        pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate,currencyType,orderReference,paymentRemarks,checkSum,txnAmount,paymentRef) VALUES ('" + ctx.request.body.orderReference + "', 'FAILED', '" + dateTime + "', '" + ctx.request.body.currencyType + "', '" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentRemarks + "', '" + ctx.request.body.checkSum + "', '" + ctx.request.body.txnAmount + "', '" + ctx.request.body.paymentRef + "')", (err, res) => {
           console.log('Inserted payment data in DB');
         });
         ctx.redirect(siteurl + '?ref=fail');
@@ -498,8 +498,8 @@ app.prepare().then(async () => {
 
       const now = new Date();
       var dateTime = date.format(now, 'YYYY/MM/DD HH:mm:ss');
-      pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "')", (err, res) => {
-        console.log('Inserted payment data in DB');
+      pool.query("INSERT INTO ci_payment (checkout_id, payment_status, createddate,currencyType,orderReference,paymentRemarks,checkSum,txnAmount,paymentRef) VALUES ('" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentStatus + "', '" + dateTime + "', '" + ctx.request.body.currencyType + "', '" + ctx.request.body.orderReference + "', '" + ctx.request.body.paymentRemarks + "', '" + ctx.request.body.checkSum + "', '" + ctx.request.body.txnAmount + "', '" + ctx.request.body.paymentRef + "')", (err, res) => {
+        console.log('Inserted payment data in DB faile condition');
       });
 
       ctx.body = "payment fail";
@@ -603,64 +603,60 @@ app.prepare().then(async () => {
   /**
    * Refund API to create new order
    */
-  router.post("/refund", koaBody(), async (ctx) => {
+  // router.post("/refund", koaBody(), async (ctx) => {
 
-    console.log("Refaunf using webhook hitting.............................. <<<<<<>>>>>>>>>>>>>>>>")
-    // if (!ctx.request.body) {
-    //   ctx.body = [{ 'message': 'no items in the cart' }];
-    // }
-    //const order_id = ctx.request.body.order_id;
+  //   console.log("Refaunf using webhook hitting.............................. <<<<<<>>>>>>>>>>>>>>>>")
+  //   // if (!ctx.request.body) {
+  //   //   ctx.body = [{ 'message': 'no items in the cart' }];
+  //   // }
+  //   //const order_id = ctx.request.body.order_id;
+  //   console.log("Json data >>>>>>>>>>>>>>>>>>>>> ", ctx.request.body)
 
-    console.log("Json data >>>>>>>>>>>>>>>>>>>>> ", ctx.request.body)
-
-    const order_id = 4650029875421;
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
-    if (result || result.rows) {
-      let authtoken = result.rows[0]['authtoken'];
-      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-      const data = await client.post({
-        path: 'orders/'+order_id+'/refunds',
-        data: {"refund":{
-          "currency":"INR",
-          "notify":true,
-          "note":"wrong size",
-          "shipping":{
-            "full_refund":true
-          },
-          "refund_line_items":[{
-            "line_item_id":11936824459485,
-            "quantity":1,
-            "restock_type":"return",
-            "location_id":67329261789
-          }],"transactions":[{
-            "parent_id":5436544909533,
-            "amount":21.23,
-            "kind":"refund",
-            "gateway":"CIPay Gateway"
-          }]}},
-        type: DataType.JSON,
-      }).then(data => {
-        return data;
-      });
-      ctx.body = data;
-      ctx.status = 200;
-    } else {
-      ctx.body = [{ 'message': 'You are not authorised!' }];
-      ctx.status = 200;
-    }
-  });
+  //   const order_id = 4650029875421;
+  //   const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+  //   if (result || result.rows) {
+  //     let authtoken = result.rows[0]['authtoken'];
+  //     const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+  //     const data = await client.post({
+  //       path: 'orders/'+order_id+'/refunds',
+  //       data: {"refund":{
+  //         "currency":"INR",
+  //         "notify":true,
+  //         "note":"wrong size",
+  //         "shipping":{
+  //           "full_refund":true
+  //         },
+  //         "refund_line_items":[{
+  //           "line_item_id":11936824459485,
+  //           "quantity":1,
+  //           "restock_type":"return",
+  //           "location_id":67329261789
+  //         }],"transactions":[{
+  //           "parent_id":5436544909533,
+  //           "amount":21.23,
+  //           "kind":"refund",
+  //           "gateway":"CIPay Gateway"
+  //         }]}},
+  //       type: DataType.JSON,
+  //     }).then(data => {
+  //       return data;
+  //     });
+  //     ctx.body = data;
+  //     ctx.status = 200;
+  //   } else {
+  //     ctx.body = [{ 'message': 'You are not authorised!' }];
+  //     ctx.status = 200;
+  //   }
+  // });
 
   /**
      * Test
      */
   router.post("/Testget", koaBody(), async (ctx) => {
-
     const data = {
       id: 123,
       secretKey: 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9TEST'
     }
-
-
     ctx.body = data;
     ctx.status = 200;
     console.log('Test conditionget');
