@@ -10,8 +10,9 @@ import cors from 'koa-cors';
 import koaBody from 'koa-bodyparser';
 const { Pool, Client } = require('pg');
 const date = require('date-and-time')
-const siteurl = 'https://cipayment.myshopify.com/cart'
+const siteurl = 'https://cipayment2.myshopify.com/cart'
 var crypto = require('crypto');
+const axios = require('axios')
 
 
 const pool = new Pool({
@@ -312,33 +313,33 @@ app.prepare().then(async () => {
   /**
    * Checkout API to Generate Checkout ID (token)
    */
-  router.post("/CICheckout", koaBody(), async (ctx) => {
-    console.log('inside checkout data here');
-    if (!ctx.request.body) {
-      ctx.body = [{ 'message': 'no items in the cart' }];
-    }
-    const checkoutData1 = ctx.request.body;
-    const lineItems = checkoutData1.line_items;
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
-    if (result || result.rows) {
-      console.log('inside rows if');
-      let authtoken = result.rows[0]['authtoken'];
-      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-      const checkoutdata = await client.post({
-        path: 'checkouts',
-        data: checkoutData1,
-        type: DataType.JSON
-      })
-        .then(data => {
-          ctx.body = data;
-          ctx.status = 200;
-        });
-    } else {
-      ctx.body = [{ 'message': 'You are not authorised!' }];
-      ctx.status = 200;
-    }
+    router.post("/CICheckout", koaBody(), async (ctx) => {
+      console.log('inside checkout data here');
+      if (!ctx.request.body) {
+        ctx.body = [{ 'message': 'no items in the cart' }];
+      }
+      const checkoutData1 = ctx.request.body;
+      const lineItems = checkoutData1.line_items;
+      const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+      if (result || result.rows) {
+        console.log('inside rows if');
+        let authtoken = result.rows[0]['authtoken'];
+        const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+        const checkoutdata = await client.post({
+          path: 'checkouts',
+          data: checkoutData1,
+          type: DataType.JSON
+        })
+          .then(data => {
+            ctx.body = data;
+            ctx.status = 200;
+          });
+      } else {
+        ctx.body = [{ 'message': 'You are not authorised!' }];
+        ctx.status = 200;
+      }
 
-  });
+    });
 
 
   /**
@@ -521,15 +522,28 @@ app.prepare().then(async () => {
       ctx.body = [{ 'message': 'no items in the cart' }];
     }
     const checkout_id = ctx.request.body.checkout_id;
-    const result = await pool.query("SELECT payment_status FROM ci_payment WHERE checkout_id = '" + checkout_id + "' ORDER BY id DESC LIMIT 1");
+    const result = await pool.query("SELECT * FROM ci_payment WHERE checkout_id = '" + checkout_id + "' ORDER BY id DESC LIMIT 1");
     if (result.rowCount > 0) {
-      var PaymentStatus = result.rows[0]['payment_status'];
+      var PaymentStatus = result.rows[0];
       ctx.body = PaymentStatus;
       ctx.status = 200;
     } else {
       ctx.body = "NA";
       ctx.status = 200;
     }
+  });
+
+
+  router.post("/deletepaymentrecord", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'no data found' }];
+    }
+    const checkout_id = ctx.request.body.checkout_id;
+    const result = await pool.query("delete FROM ci_payment WHERE checkout_id = '" + checkout_id + "'");
+      ctx.body = 'success';
+      ctx.status = 200;
+      console.log("delete payment record",)
+    
   });
 
 
@@ -563,91 +577,60 @@ app.prepare().then(async () => {
     }
   });
 
- /**
-   * Refund API to create new order
-   */
-  router.post("/calculaterefund", koaBody(), async (ctx) => {
-    // if (!ctx.request.body) {
-    //   ctx.body = [{ 'message': 'no items in the cart' }];
-    // }
-    //const order_id = ctx.request.body.order_id;
-    const order_id = 4650029875421;
-    const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
-    if (result || result.rows) {
-      let authtoken = result.rows[0]['authtoken'];
-      const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
 
-      const data = await client.post({
-        path: 'orders/4650029875421/refunds/calculate',
-        data: {"refund":{
-          "shipping":{
-            "full_refund":true
-          },
-          "refund_line_items":[{
-            "line_item_id":42330181533917,
-            "quantity":1,
-            "restock_type":"no_restock"
-          }]}},
-        type: DataType.JSON,
-      }).then(data => {
-        return data;
-      });
-      ctx.body = data;
-      ctx.status = 200;
-    } else {
-      ctx.body = [{ 'message': 'You are not authorised!' }];
-      ctx.status = 200;
-    }
-  });
 
   /**
    * Refund API to create new order
    */
-  // router.post("/refund", koaBody(), async (ctx) => {
+  router.post("/refund", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'No data found' }];
+    }
+    
+   const currencyType = ctx.request.body.transactions[0].currency
+   const orderReference = ctx.request.body.order_id
+   //const orderReference = '9a7bb749c6805bb46018a9eac1a5b474';
+   const refundReference = ctx.request.body.transactions[0].id
+   const refundAmount = ctx.request.body.transactions[0].amount
+   const refundCharges = false
 
-  //   console.log("Refaunf using webhook hitting.............................. <<<<<<>>>>>>>>>>>>>>>>")
-  //   // if (!ctx.request.body) {
-  //   //   ctx.body = [{ 'message': 'no items in the cart' }];
-  //   // }
-  //   //const order_id = ctx.request.body.order_id;
-  //   console.log("Json data >>>>>>>>>>>>>>>>>>>>> ", ctx.request.body)
+   let reqURL = 'https://demo.retail.cipay.inspirenetz.com/loyaltypg/public/payment/shopify-test/refund';
 
-  //   const order_id = 4650029875421;
-  //   const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
-  //   if (result || result.rows) {
-  //     let authtoken = result.rows[0]['authtoken'];
-  //     const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
-  //     const data = await client.post({
-  //       path: 'orders/'+order_id+'/refunds',
-  //       data: {"refund":{
-  //         "currency":"INR",
-  //         "notify":true,
-  //         "note":"wrong size",
-  //         "shipping":{
-  //           "full_refund":true
-  //         },
-  //         "refund_line_items":[{
-  //           "line_item_id":11936824459485,
-  //           "quantity":1,
-  //           "restock_type":"return",
-  //           "location_id":67329261789
-  //         }],"transactions":[{
-  //           "parent_id":5436544909533,
-  //           "amount":21.23,
-  //           "kind":"refund",
-  //           "gateway":"CIPay Gateway"
-  //         }]}},
-  //       type: DataType.JSON,
-  //     }).then(data => {
-  //       return data;
-  //     });
-  //     ctx.body = data;
-  //     ctx.status = 200;
-  //   } else {
-  //     ctx.body = [{ 'message': 'You are not authorised!' }];
-  //     ctx.status = 200;
-  //   }
-  // });
+    let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
+    let payloadStringref = 'currencyType=' + currencyType +'|orderReference=' + orderReference +'|refundAmount=' + refundAmount +'|refundCharges=' + refundCharges +'|refundReference=' +refundReference
+    const hash = crypto.createHmac('sha256', secretKey)
+      .update(payloadStringref)
+      .digest('hex');
+
+      var qs = require('qs');
+      var payloadObject = qs.stringify({
+        'currencyType':currencyType,
+        'orderReference': orderReference,
+        'refundAmount': refundAmount,
+        'refundCharges':refundCharges,
+        'refundReference': refundReference,
+        'checkSum': hash
+      });
+      var config = {
+        method: 'post',
+        url: reqURL,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data: payloadObject
+      };
+      const res = await axios(config)
+        .then(function (response) {
+          return response.data;
+        })
+        .catch(function (error) {
+          return error;
+        });
+      console.log('Refund Payment Data', res);
+      ctx.body = res;
+      ctx.status = 200;
+
+  });
 
   /**
      * Test
