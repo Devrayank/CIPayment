@@ -110,3 +110,9 @@ div#sidebar-tab button:hover,div#sidebar-tab button:focus{
     #rightbar button[type=submit] {
         padding: 7px 33px;
     } 
+
+    div#payment-method .custom-control.custom-switch > span {
+      font-size: 15px;
+      display: inline-block;
+      padding: 0 28px 0 0;
+  }

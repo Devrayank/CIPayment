@@ -10,7 +10,7 @@ import cors from 'koa-cors';
 import koaBody from 'koa-bodyparser';
 const { Pool, Client } = require('pg');
 const date = require('date-and-time')
-const siteurl = 'https://cipayment2.myshopify.com/cart'
+const siteurl = 'https://cipay2.myshopify.com/cart'
 var crypto = require('crypto');
 const axios = require('axios')
 
@@ -38,6 +38,24 @@ pool.connect(function (err) {
   pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL, currencyType VARCHAR ( 255 ), orderReference VARCHAR ( 255 ), paymentRemarks VARCHAR ( 255 ), checkSum VARCHAR ( 255 ), txnAmount VARCHAR ( 255 ), paymentRef VARCHAR ( 255 ))", (err, res) => {
     console.log('Create CIpayment Table');
   });
+
+
+
+
+  const resultpayment =  pool.query("SELECT secretkey,cipay_baseurl,partnercode FROM cigateway WHERE storeorigin = 'cipay2.myshopify.com' and status='1'");
+  console.log("**********************************###########", resultpayment);
+   if (resultpayment.rowCount > 0) {
+      PayPartnerCode = resultpayment.rows.partnercode
+      PaySecretKey = resultpayment.rows.secretkey
+      CipayBaseurl = resultpayment.rows.cipay_baseurl
+
+      console.log("ddddddddddddddddddddddddddddd", resultpayment.rows['secretkey'])
+
+     console.log("Pay mode CipayBaseurl: ============ ", CipayBaseurl);
+     
+   }
+
+
 
 });
 
@@ -94,6 +112,24 @@ app.prepare().then(async () => {
             `Failed to register APP_UNINSTALLED webhook: ${response.result}`
           );
         }
+
+        /** refund created */
+        const responserefund = await Shopify.Webhooks.Registry.register({
+          shop,
+          accessToken,
+          path: "/refundpayment",
+          topic: "REFUNDS_CREATE",
+          webhookHandler: async (topic, shop, body) =>
+            delete ACTIVE_SHOPIFY_SHOPS[shop],
+        });
+        if (!responserefund.success) {  
+          console.log(
+            `Failed to register APP_UNINSTALLED webhook: ${responserefund.result}`
+          );
+        }
+         /** refund created */
+
+
         // Redirect to app with shop parameter upon auth
         ctx.redirect(`/?shop=${shop}&host=${host}`);
       },
@@ -254,9 +290,23 @@ app.prepare().then(async () => {
 
   router.post("/TooglbuttGet", async (ctx) => {
     let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
-    const resulttoggle = await pool.query("SELECT paymentmode,status FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1' and paymentmode='live'");
+    const resulttoggle = await pool.query("SELECT paymentmode,status,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1' and paymentmode='live'");
     if (resulttoggle.rowCount > 0) {
-      console.log("Pay mode live status : ", resulttoggle.rows);
+    
+      ctx.body = resulttoggle.rows;
+      ctx.status = 200;
+    } else {
+      ctx.body = "no data found";
+      ctx.status = 200;
+    }
+  });
+
+  router.post("/TooglbuttGets", async (ctx) => {
+
+    let CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
+    const resulttoggle = await pool.query("SELECT partnercode,paymentmode,status,cipay_baseurl FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1'");
+    if (resulttoggle.rowCount > 0) {
+      //console.log("Pay mode live status : ", resulttoggle.rows);
       ctx.body = resulttoggle.rows;
       ctx.status = 200;
     } else {
@@ -546,6 +596,31 @@ app.prepare().then(async () => {
     
   });
 
+  /**
+   * Customer getting API 
+   */
+   router.post("/customers", koaBody(), async (ctx) => {
+    if (!ctx.request.body) {
+      ctx.body = [{ 'message': 'No customer id' }];
+    }
+    const customer_id = ctx.request.body.customer_id
+  const result = await pool.query("SELECT authtoken FROM ciauth WHERE storeorigin = '" + process.env.SHOP + "' ORDER BY id DESC LIMIT 1");
+  if (result || result.rows) {
+    let authtoken = result.rows[0]['authtoken'];
+    const client = new Shopify.Clients.Rest(process.env.SHOP, authtoken);
+    const data = await client.get({
+      path: 'customers/'+customer_id,
+    }).then(data => {
+      return data;
+    });
+    ctx.body = data;
+    ctx.status = 200;
+  } else {
+    ctx.body = [{ 'message': 'You are not authorised!' }];
+    ctx.status = 200;
+  }
+  });
+
 
   /**
    * Order cancle API to create new order
@@ -582,19 +657,31 @@ app.prepare().then(async () => {
   /**
    * Refund API to create new order
    */
-  router.post("/refund", koaBody(), async (ctx) => {
+  router.post("/refundpayment", koaBody(), async (ctx) => {
     if (!ctx.request.body) {
       ctx.body = [{ 'message': 'No data found' }];
     }
-    
+   const CIShopOrigin = ACTIVE_SHOPIFY_SHOPS["shopOrigin"];
    const currencyType = ctx.request.body.transactions[0].currency
    const orderReference = ctx.request.body.order_id
    //const orderReference = '9a7bb749c6805bb46018a9eac1a5b474';
    const refundReference = ctx.request.body.transactions[0].id
    const refundAmount = ctx.request.body.transactions[0].amount
    const refundCharges = false
-
-   let reqURL = 'https://demo.retail.cipay.inspirenetz.com/loyaltypg/public/payment/shopify-test/refund';
+   var PayPartnerCode = '';
+   var PaySecretKey = '';
+   var CipayBaseurl = '';
+   const resultpayment = await pool.query("SELECT secretkey,cipay_baseurl,partnercode FROM cigateway WHERE storeorigin = '" + CIShopOrigin + "' and status='1'");
+   if (resultpayment.rowCount > 0) {
+      PayPartnerCode = resultpayment.rows[0].partnercode
+      PaySecretKey = resultpayment.rows[0].secretkey
+      CipayBaseurl = resultpayment.rows[0].cipay_baseurl
+   } else {
+     ctx.body = "no data found";
+     ctx.status = 200;
+   }
+    let reqURL = CipayBaseurl+'/'+PayPartnerCode+'/refund';
+    //https://{BASE_URL}/public/payment/{partnercode}/refund
 
     let secretKey = 'xiv1ibz7udg2hmg28f4pz2wphdegi84r9';
     let payloadStringref = 'currencyType=' + currencyType +'|orderReference=' + orderReference +'|refundAmount=' + refundAmount +'|refundCharges=' + refundCharges +'|refundReference=' +refundReference
@@ -611,6 +698,8 @@ app.prepare().then(async () => {
         'refundReference': refundReference,
         'checkSum': hash
       });
+
+     // console.log("data send ================== ", payloadObject)
       var config = {
         method: 'post',
         url: reqURL,
@@ -626,7 +715,7 @@ app.prepare().then(async () => {
         .catch(function (error) {
           return error;
         });
-      console.log('Refund Payment Data', res);
+      console.log('Refund Payment Datas --', res);
       ctx.body = res;
       ctx.status = 200;
 

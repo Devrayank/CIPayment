@@ -1,0 +1,5 @@
+SHOPIFY_API_KEY=8de32c2d72d8f56defe3fd24bffaa531
+SHOPIFY_API_SECRET=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
+SHOP=cipayment2.myshopify.com
+SCOPES=write_products,write_customers,write_draft_orders,read_checkouts,write_checkouts,read_products,write_orders,read_orders,read_translations,write_translations,read_price_rules,read_customers,write_customers
+HOST=https://230b-2401-4900-55ba-e518-6266-7ff1-34f8-7c40.ngrok.io
