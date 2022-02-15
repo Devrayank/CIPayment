@@ -14,46 +14,50 @@ const siteurl = 'https://cipay2.myshopify.com/cart'
 var crypto = require('crypto');
 const axios = require('axios')
 
+const DB_HOST = process.env.DB_HOST;
+const DB_USER = process.env.DB_USER;
+const DB_NAME = process.env.DB_NAME;
+const DB_PASSWORD = process.env.DB_PASSWORD;
+
 
 const pool = new Pool({
-  user: "tis24",
-  host: "127.0.0.1",
-  database: "tis24",
-  password: "TechAdmin",
-  port: 5432,
+  user: DB_USER,
+  host: DB_HOST,
+  database: DB_NAME,
+  password: DB_PASSWORD  
 });
 
 pool.connect(function (err) {
   if (err) throw err;
   console.log("Connected to DB!");
 
-  pool.query("CREATE TABLE IF NOT EXISTS ciauth(id serial PRIMARY KEY, storeid VARCHAR ( 255 ) NOT NULL, authtoken VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 100 ) NOT NULL)", (err, res) => {
-    console.log('Create Executed');
-  });
+  // pool.query("CREATE TABLE IF NOT EXISTS ciauth(id serial PRIMARY KEY, storeid VARCHAR ( 255 ) NOT NULL, authtoken VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 100 ) NOT NULL)", (err, res) => {
+  //   console.log('Create Executed');
+  // });
 
-  pool.query("CREATE TABLE IF NOT EXISTS cigateway (id serial PRIMARY KEY, partnercode VARCHAR ( 255 ) NOT NULL, secretkey VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 255 ) NOT NULL, paymentmode VARCHAR ( 255 ), createddate TIMESTAMP NOT NULL, updateddate TIMESTAMP, status INT DEFAULT 0, cipay_baseurl VARCHAR ( 255 ) NOT NULL)", (err, res) => {
-    console.log('Create CIpayment Table');
-  });
+  // pool.query("CREATE TABLE IF NOT EXISTS cigateway (id serial PRIMARY KEY, partnercode VARCHAR ( 255 ) NOT NULL, secretkey VARCHAR ( 255 ) NOT NULL, storeorigin VARCHAR ( 255 ) NOT NULL, paymentmode VARCHAR ( 255 ), createddate TIMESTAMP NOT NULL, updateddate TIMESTAMP, status INT DEFAULT 0, cipay_baseurl VARCHAR ( 255 ) NOT NULL)", (err, res) => {
+  //   console.log('Create CIpayment Table');
+  // });
 
-  pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL, currencyType VARCHAR ( 255 ), orderReference VARCHAR ( 255 ), paymentRemarks VARCHAR ( 255 ), checkSum VARCHAR ( 255 ), txnAmount VARCHAR ( 255 ), paymentRef VARCHAR ( 255 ))", (err, res) => {
-    console.log('Create CIpayment Table');
-  });
-
-
+  // pool.query("CREATE TABLE IF NOT EXISTS ci_payment (id serial PRIMARY KEY, checkout_id VARCHAR ( 255 ) NOT NULL, payment_status VARCHAR ( 255 ) NOT NULL, createddate TIMESTAMP NOT NULL, currencyType VARCHAR ( 255 ), orderReference VARCHAR ( 255 ), paymentRemarks VARCHAR ( 255 ), checkSum VARCHAR ( 255 ), txnAmount VARCHAR ( 255 ), paymentRef VARCHAR ( 255 ))", (err, res) => {
+  //   console.log('Create CIpayment Table');
+  // });
 
 
-  const resultpayment =  pool.query("SELECT secretkey,cipay_baseurl,partnercode FROM cigateway WHERE storeorigin = 'cipay2.myshopify.com' and status='1'");
-  console.log("**********************************###########", resultpayment);
-   if (resultpayment.rowCount > 0) {
-      PayPartnerCode = resultpayment.rows.partnercode
-      PaySecretKey = resultpayment.rows.secretkey
-      CipayBaseurl = resultpayment.rows.cipay_baseurl
 
-      console.log("ddddddddddddddddddddddddddddd", resultpayment.rows['secretkey'])
 
-     console.log("Pay mode CipayBaseurl: ============ ", CipayBaseurl);
+  // const resultpayment =  pool.query("SELECT secretkey,cipay_baseurl,partnercode FROM cigateway WHERE storeorigin = 'cipay2.myshopify.com' and status='1'");
+  // console.log("**********************************###########", resultpayment);
+  //  if (resultpayment.rowCount > 0) {
+  //     PayPartnerCode = resultpayment.rows.partnercode
+  //     PaySecretKey = resultpayment.rows.secretkey
+  //     CipayBaseurl = resultpayment.rows.cipay_baseurl
+
+  //     console.log("ddddddddddddddddddddddddddddd", resultpayment.rows['secretkey'])
+
+  //    console.log("Pay mode CipayBaseurl: ============ ", CipayBaseurl);
      
-   }
+  //  }
 
 
 
