@@ -1,0 +1,650 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ 'cipay.css' | asset_url }}">
+
+<script defer="defer" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script defer="defer" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>  
+<script defer="defer" src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+<script defer="defer" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9uCtFYter6P4dq1bAAJE__CIUJiaun5Y&libraries=places&callback=initAutocomplete" async defer></script>
+<script defer="defer" src="{{ 'cipay.js' | asset_url }}" defer="defer"></script>
+
+<!-- cipay Model -->
+<div class="modal fade f-Roboto" id="cipaymodel" tabindex="-1" aria-labelledby="cipaymodelLabel" aria-hidden="true">
+  <div class="modal-dialog  modal-lg">
+        
+    <!-- Modal content-->
+    <div class="modal-content main" style="padding: 2px 0px 10px;">      
+      <div class="modal-header">
+        <div class="cilogo headerci1" style="background-image:url( {{ "logo.png" | asset_img_url }} )"></div>
+        <div class="title-wrapper-with-link mt-0">
+            <h1 class="title title--primary f-Roboto fw-400">Your cart<span></span></h1>
+            <a href="{{ routes.all_products_collection_url }}" class="underlined-link ms-4">Continue shopping</a>
+          </div>
+        <button type="button"  class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>      
+      <div class='row px-4 pb-4'>
+          <!--   breadcrumb  -->
+           <div class="custom-bd">
+              <nav aria-label="Breadcrumb">
+                <ol class="breadcrumb " role="list">
+                    <li class="breadcrumb__item breadcrumb__item--completed">
+                      <a class="breadcrumb__link" href="/cart">Cart</a>
+                      <span class="arrow-bd"> > </span>
+                    </li>
+
+                      <li class="breadcrumb__item breadcrumb__item infobd">
+                      <span class="breadcrumb__text">Information</span><span class="arrow-bd hidden"> > </span>
+
+                    </li>
+                      <li class="breadcrumb__item breadcrumb__item hidden shippingbd">
+                      <span class="breadcrumb__text">Shipping</span><span class="arrow-bd hidden"> > </span>
+
+                    </li>
+                      <li class="breadcrumb__item breadcrumb__item hidden paymenetbd">
+                      <span class="breadcrumb__text">Payment</span>
+                    </li>
+                </ol>
+              </nav>
+          </div>           
+          <!--     end        -->
+        <div class='col-sm-6 first-section' id="ciorderdetails">
+         <div class="accordion" id="ciaccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header hidden" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  Hide order summary
+                </button>
+              </h2>
+              <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#ciaccordion">
+                <div class="accordion-body">    
+
+                          <cart-items class="page-width{% if cart == empty %} is-empty{% endif %}">
+                          
+                          
+                          <div class="cart__warnings">
+                            <h1 class="cart__empty-text">{{ 'sections.cart.empty' | t }}</h1>
+                            <a href="{{ routes.all_products_collection_url }}" class="button">
+                              {{ 'general.continue_shopping' | t }}
+                            </a>
+
+                            {%- if shop.customer_accounts_enabled -%}
+                              <h2 class="cart__login-title">{{ 'sections.cart.login.title' | t }}</h2>
+                              <p class="cart__login-paragraph">
+                                {{ 'sections.cart.login.paragraph_html' | t: link: routes.account_login_url }}
+                              </p>
+                            {%- endif -%}
+                          </div>
+
+                          <form action="{{ routes.cart_url }}" class="cart__contents critical-hidden" method="post" id="cart">
+                            <div class="cart__items" id="main-cart-items" data-id="{{ section.id }}">
+                              <div class="js-contents scrolldata">
+                                {%- if cart != empty -%}
+                                  <table class="cart-items">
+                                      <thead>
+                                        <tr>
+                                          <th class="caption-with-letter-spacing" colspan="2" scope="col">Product</th>
+                                          <th class="caption-with-letter-spacing" colspan="1" scope="col">Quantity</th>
+                                          <th class="small-hide center caption-with-letter-spacing" colspan="1" scope="col">Total</th>
+                                        </tr>
+                                      </thead>
+
+                                      <tbody>
+                                        {%- for item in cart.items -%}
+                                          <tr class="cart-item ci-cart-items" id="CartItem-{{ item.index | plus: 1 }}" data-total="{%- if item.original_line_price != item.final_line_price -%} { 'products.product.price.regular_price' | t }} {{ item.original_line_price | money }} {{ 'products.product.price.sale_price' | t }} {{ item.final_line_price | money }} {%- else -%} {{ item.original_line_price | money }} {%- endif -%}" data-quantity="{{ item.quantity }}" data-quantity="{{ item.quantity }}" data-variantid="{{ item.variant_id }}" data-title="{{ item.title }}">
+                                            
+                                            <td class="cart-item__media">
+                                              {% if item.image %}
+                                                {% comment %} Leave empty space due to a:empty CSS display: none rule {% endcomment %}
+                                                <a href="{{ item.url }}" class="cart-item__link" aria-hidden="true" tabindex="-1"> </a>
+                                                <img class="cart-item__image"
+                                                  src="{{ item.image | img_url: '300x' }}"
+                                                  alt="{{ item.image.alt | escape }}"
+                                                  loading="lazy"
+                                                  width="150"
+                                                  height="{{ 150 | divided_by: item.image.aspect_ratio | ceil }}"
+                                                >
+                                              {% endif %}
+                                              
+                                              
+                                            </td>
+
+                                            <td class="cart-item__details">
+                                              <lable class="cart-item__name h4 break f-Roboto fw-400">{{ item.product.title | escape }}</lable>
+                                            </td>
+                                                                          
+                                            <td class="cart-item__totals center small-hide newtest">
+                                              <div class="cart-item__price-wrapper">
+                                                {%- if item.original_line_price != item.final_line_price -%}
+                                                  <dl class="cart-item__discounted-prices">
+                                                    <dt class="visually-hidden">
+                                                      {{ 'products.product.price.regular_price' | t }}
+                                                    </dt>
+                                                    <dd>
+                                                      <s class="cart-item__old-price price price--end">
+                                                        {{ item.original_line_price | money }}
+                                                      </s>
+                                                    </dd>
+                                                    <dt class="visually-hidden">
+                                                      {{ 'products.product.price.sale_price' | t }}
+                                                    </dt>
+                                                    <dd class="price price--end">
+                                                      {{ item.final_line_price | money }}
+                                                    </dd>
+                                                  </dl>
+                                                {%- else -%}
+                                                  <span class="price price--end">
+                                                    {{ item.original_line_price | money }}
+                                                  </span>
+                                                {%- endif -%}
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        {%- endfor -%}
+                                      </tbody>
+                                    </table>
+                                  {%- endif -%}
+                                </div>
+                              </div>
+                              <p class="visually-hidden" id="cart-live-region-text" aria-live="polite" role="status"></p>
+                              <p class="visually-hidden" id="shopping-cart-line-item-status" aria-live="polite" aria-hidden="true" role="status">{{ 'accessibility.loading' | t }}</p>
+                            </form>
+                          
+                          </cart-items>
+                        
+                            <input type="text" name="cidiscount" id="ciinputdiscount" placeholder="Enter Coupon code">
+                            <div class="applydiscount">
+                              <button name="cicheckout[submit]" type="submit" id="cicheckout_submit" class="field__input-btn btn btn-secondary" aria-busy="false">
+                              Apply</button>
+                              </div>
+                            <p class="field__message field__message--error hidden" id="reductioncodeci">Enter a valid discount code</p>
+                            <input type="hidden" value="" datavalue="" id="disc_hidden">    
+                            <div class="appliedcode"></div>      
+
+                            <table class="table calctable">              
+                              <tbody id="ratesTable">                
+                                <tr class="spinner loader"></tr>
+                                
+                                <tr>
+                                  <th>Subtotal</th>
+                                  <td id="CISubtotal">Continue in next step</td>
+                                </tr>
+                                <tr>
+                                <!--                  for discount -->
+                                <tr class="total-line total-line--reduction CIdiscountrow" data-discount-type="fixed_amount" style="display: none;">
+                                  <th class="total-line__name cicodenameth" scope="row">
+                                    <span class="sdiscnt">Discount</span>                   
+                                    <span class="reduction-code">                      
+                                      <div class="reduction-code__textdiv"></div>
+                                    </span>
+                                  </th> 
+
+                                  <td class="total-line__price">
+                                    <span class="cipricedis order-summary__emphasis skeleton-while-loading" aria-hidden="true" data-checkout-discount-amount-target="">
+                                      Calculated at next step
+                                    </span>
+                                    <span class="cipricedis2 visually-hidden skeleton-while-loading-sr">
+                                      ₹ off total order price
+                                    </span>
+                                  </td>
+                                </tr>
+                            <!--/end/ -->
+                                  
+
+                                  <th>Shipping</th>
+                                  <td id="CIShipping">Calculated at next step</td>
+                                </tr>
+                                <tr>
+                                  <th>Taxes (estimated)</th>
+                                  <td id="CITax">Calculated at next step</td>
+                                </tr>
+                        <tr>
+                                  <th>Total</th>
+                                  <td id="CITotal">Calculated at next step</td>
+                              </tbody>
+                              
+                            </table>
+
+
+                </div>
+              </div>
+            </div>
+        </div>
+        </div>
+        <div class="col-sm-6">
+        <div id="ContactInfo" class="bg-light p-4 f-Roboto">
+          <form class="animate-floating-labels">
+              <h2 class="title-wrapper-with-link f-Roboto fw-500">Shipping address</h2>
+              <div class="mb-3">
+                <label for="exampleInputEmail1" class="form-label">Email address</label>
+                <input type="email" id="inputEmail" class="form-control mb-2" aria-describedby="emailHelp" placeholder="Email or mobile phone number">
+                  <p id="error-inputEmail" class="alert-danger"></p> 
+                <div class="mb-3 form-check">
+                  <input type="checkbox" id="inputNewsOffer" class="form-check-input">
+                  <label class="form-check-label" for="exampleCheck1">Email me with news and offers</label>
+                </div>
+              </div>
+            </form>
+            <form class="row g-3 animate-floating-labels">
+              <h2 class="title-wrapper-with-link mb-0 f-Roboto fw-500">Contact information</h2>
+              {% unless customer %}
+              
+              <p class="layout-flex__item  mt-0 mb-0">
+                Already have an account?
+                <a href="/account/login?checkout_url=https%3A%2F%2Fcipayment.myshopify.com%2F62484087005%2Fcheckouts%2Fb3d6c88eccbffcdde6d9b17db30b6a43%3Fkey%3D778399ee2258bf990e3c7f4ff89bf8b1%26step%3Dcontact_information">
+                  Log in
+                </a>
+              </p>
+              
+              {% endunless %}     
+              <div class="col-md-6">
+                <input type="text" id="inputFName" class="form-control" placeholder="First name" aria-label="First name">
+              </div>
+              <div class="col-md-6">
+                <input type="text" id="inputLName" class="form-control" placeholder="Last name" aria-label="Last name">
+              </div>
+              <div class="col-md-12">
+                <input class="form-control" id="country" disabled="true" placeholder="Country">
+              </div>
+            
+              <div class="col-12">
+                <input id="inputAddress" placeholder="Enter your address" onFocus="geolocate()" type="text" class="form-control">              
+              </div>
+              <div class="col-12">              
+                <input class="form-control" id="street_number" disabled="true" placeholder="Street Address,Apartment, suit etc. (optional)">
+              </div>
+              <div class="col-md-4 mb-2">
+                <input class="form-control field" id="locality" disabled="true" placeholder="city">
+              </div>
+              <div class="col-md-4 mb-2">
+                <input class="form-control" id="administrative_area_level_1" disabled="true" placeholder="State">
+              </div>
+              <div class="col-md-4 mb-2">
+                <input class="form-control" id="postal_code" disabled="true"  placeholder="PIN code">
+              </div>
+              <div class="col-12" id="col-savedata">
+                <div class="form-check">
+                  <input class="form-check-input" id="inputSaveData" type="checkbox">
+                  <label class="form-check-label" for="gridCheck">
+                    Save this information for next time
+                  </label>
+                </div>
+              </div>            
+              <div class="col-12">
+                <button type="submit" class="btn" id="ContinueShipping">Continue to shipping</button>
+              <button type="submit" class="btn hidden" id="retrivechk">transaction </button>
+                <button type="submit" class="btn  hidden" id="updateod">update order</button>
+
+              <a class="text-decoration-none step__footer__previous-link-content" href="/cart">Return to cart</a>
+              </div>
+            </form>
+        </div>
+
+          <div id="ShippingInfo" style="display:none">
+                <div class="step__sections">
+                <div class="section">
+                    <div class="content-box">
+                      <div role="table" class="content-box__row content-box__row--tight-spacing-vertical">
+                          <div role="row" class="review-block">
+                            <div class="review-block__inner">
+                                <div role="rowheader" class="review-block__label">
+                                  Contact
+                                </div>
+                                <div role="cell" class="review-block__content">
+                                  <bdo dir="ltr" id="contact"></bdo>
+                                </div>
+                            </div>
+                            <div role="cell" class="review-block__link">
+                                <button class="link--small ChangeInfo btn">
+                                <span aria-hidden="true">Change</span>
+                                <span class="visually-hidden">Change contact information</span>
+                                </button>    
+                            </div>
+                          </div>
+                          <div role="row" class="review-block">
+                            <div class="review-block__inner">
+                                <div role="rowheader" class="review-block__label">
+                                  Ship to
+                                </div>
+                                <div role="cell" class="review-block__content">
+                                  <address class="address address--tight" id="add">
+                                  </address>
+                                </div>
+                            </div>
+                            <div role="cell" class="review-block__link">
+                                <button class="link--small ChangeInfo btn">
+                                  <span aria-hidden="true">Change</span>
+                                  <span class="visually-hidden">Change shipping address</span>
+                                </button>      
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                </div>
+                <div class="section section--shipping-method">
+                    <div class="section__header">
+                      <h2 class="section__title f-Roboto fw-500" id="main-header" tabindex="-1">
+                          Shipping method
+                      </h2>
+                    </div>
+                    <div class="section__content">
+                      <div class="content-box" data-shipping-methods="">
+                          <div class="content-box__row">
+                            <ul id="shippingwrap">
+                              <li class="spinner show loader"></li>
+                            </ul>
+                          </div>
+                      </div>
+                    </div>
+                </div>
+                <!-- section diffrent & same billing address-->
+                <div class="section section--same-method f-Roboto" id="model-addbill">
+                    <div class="section__header">
+                      <h2 class="section__title f-Roboto fw-500" id="main-header" tabindex="-1">
+                          Billing address
+                      </h2>
+                        <p class="section__text">Select the address that matches your card or payment method.</p>
+                              <!-- /*for diffrent & same billing address*/ -->                  
+                                
+                                <div class="section__content">
+                                      <fieldset class="content-box f-Roboto">
+                                        <legend class="visually-hidden f-Roboto">Choose a billing address</legend>
+
+                                        <div class="radio-wrapper content-box__row" data-same-billing-address="">
+                                          <div class="radio__input d-inline">
+                                            <input class="input-radio" data-backup="different_billing_address_false" type="radio" value="" checked="checked" name="cout_different_billing_address" id="cout_different_billing_address_false">
+                                          </div>
+                                          <label class="content-box__emphasis radio__label f-Roboto" for="cout_different_billing_address_false">
+                                            Same as shipping address</label>
+                                        </div>
+
+                                        <div class="radio-wrapper content-box__row" data-different-billing-address="">
+                                          <div class="radio__input d-inline">
+                                            <input class="input-radio" data-backup="different_billing_address_true" aria-controls="section--billing-address__different" type="radio" value="Yes" name="cout_different_billing_address" id="cout_different_billing_address_true">
+                                          </div>
+                                          <label class="content-box__emphasis radio__label f-Roboto" for="cout_different_billing_address_true">
+                                            Use a different billing address</label>
+                                        </div>
+
+                                        <div class="radio-group__row content-box__row content-box__row--secondary f-Roboto" id="section--billing-address__different">
+                                          <div class="fieldset">                
+                                              <!-- Custom billing form  -->
+                                              <form class="row g-3 animate-floating-labels" id="diffbilling">
+              
+                                                  <div class="col-md-12">
+                                                    
+                                                    
+                                                    <select class="form-select" id="billCountry" aria-label="Default select example">
+                                                      <option selected  value="India" datavalue="IN">India</option>
+                                                      <option value="United States" datavalue="US">United States</option>
+                                                    </select>
+                                                  </div>
+                                                  <div class="col-md-6">
+                                                    <input type="text" id="billFName" class="form-control" placeholder="First name" aria-label="First name">
+                                                  </div>
+                                                  <div class="col-md-6">
+                                                    <input type="text" id="billLName" class="form-control" placeholder="Last name" aria-label="Last name">
+                                                  </div>
+                                                  <div class="col-12">
+                                                    <input type="text" id="billAddress" class="form-control" placeholder="Address">
+                                                  </div>
+                                                  <div class="col-12">
+                                                    <input type="text" id="billApartment" class="form-control" placeholder="Apartment, suit, etc. (optional)">
+                                                  </div>
+                                                  <div class="col-md-4 mb-2">
+                                                    <input type="text" id="billCity" class="form-control" placeholder="city">
+                                                  </div>
+                                                  <div class="col-md-4 mb-2">
+                                                    <select id="billState" class="form-select">
+                                                      <option datavalue="" selected>State</option>
+                                                      <option datavalue="AP" value="Andhra Pradesh">Andhra Pradesh</option>
+                                                      <option datavalue="AN" value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                                                      <option datavalue="AR" value="Arunachal Pradesh">Arunachal Pradesh</option>
+                                                      <option datavalue="AS" value="Assam">Assam</option>
+                                                      <option datavalue="BR" value="Bihar">Bihar</option>
+                                                      <option datavalue="CH" value="Chandigarh">Chandigarh</option>
+                                                      <option datavalue="CG" value="Chhattisgarh">Chhattisgarh</option>
+                                                      <option datavalue="DN" value="Dadar and Nagar Haveli">Dadar and Nagar Haveli</option>
+                                                      <option datavalue="DD" value="Daman and Diu">Daman and Diu</option>
+                                                      <option datavalue="DL" value="Delhi">Delhi</option>
+                                                      <option datavalue="LD" value="Lakshadweep">Lakshadweep</option>
+                                                      <option datavalue="PY" value="Puducherry">Puducherry</option>
+                                                      <option datavalue="GA" value="Goa">Goa</option>
+                                                      <option datavalue="GJ" value="Gujarat">Gujarat</option>
+                                                      <option datavalue="HR" value="Haryana">Haryana</option>
+                                                      <option datavalue="HP" value="Himachal Pradesh">Himachal Pradesh</option>
+                                                      <option datavalue="JK" value="Jammu and Kashmir">Jammu and Kashmir</option>
+                                                      <option datavalue="JH" value="Jharkhand">Jharkhand</option>
+                                                      <option datavalue="KA" value="Karnataka">Karnataka</option>
+                                                      <option datavalue="KL" value="Kerala">Kerala</option>
+                                                      <option datavalue="MP" value="Madhya Pradesh">Madhya Pradesh</option>
+                                                      <option datavalue="MH" value="Maharashtra">Maharashtra</option>
+                                                      <option datavalue="MN" value="Manipur">Manipur</option>
+                                                      <option datavalue="ML" value="Meghalaya">Meghalaya</option>
+                                                      <option datavalue="MZ" value="Mizoram">Mizoram</option>
+                                                      <option datavalue="NL" value="Nagaland">Nagaland</option>
+                                                      <option datavalue="OR" value="Odisha">Odisha</option>
+                                                      <option datavalue="PB" value="Punjab">Punjab</option>
+                                                      <option datavalue="RJ" value="Rajasthan">Rajasthan</option>
+                                                      <option datavalue="SK" value="Sikkim">Sikkim</option>
+                                                      <option datavalue="TN" value="Tamil Nadu">Tamil Nadu</option>
+                                                      <option datavalue="TS" value="Telangana">Telangana</option>
+                                                      <option datavalue="TR" value="Tripura">Tripura</option>
+                                                      <option datavalue="UP" value="Uttar Pradesh">Uttar Pradesh</option>
+                                                      <option datavalue="UK" value="Uttarakhand">Uttarakhand</option>
+                                                      <option datavalue="WB" value="West Bengal">West Bengal</option>
+                                                    </select>
+                                                  </div>
+                                                  <div class="col-md-4 mb-2">
+                                                    <input type="text" id="billPin" class="form-control" placeholder="PIN code">
+                                                  </div>
+                                                  <div class="col-12"><div class="form-check"><input class="form-check-input" id="Savebilladres" type="checkbox" style="width:1em"><label class="form-check-label" for="gridCheckadr">Save this information for next time</label></div></div>
+                                                  
+                                                  
+                                                </form>
+                                              <!-- /*end*/ -->
+                                          </div>
+                                        </div>
+                                      </fieldset>
+                                </div>
+                            
+                            <!-- /*end*/-->
+                    </div>
+                  
+                </div>
+                <!--  -->
+
+              </div>
+            <button id="ContinuePayment" class="btn">Continue to Payment</button>
+            <a href="/cart" class="text-decoration-none cart_retrn">Return to cart</a>
+            <button type="submit" class="btn btn-primary mt-5" id="createOrderbtn">CI Pay</button>
+            <div class="rtnsh hidden">
+              <div class="spinner loader"></div>
+                
+              <form method="post" action=""  id="cipayform" formtarget="_self">                
+                  <input type="hidden" name="currencyType" class="form-control" value="INR">
+                  <input type="hidden" name="orderReference" id="orderReference" value="" placeholder="Password">
+                  <input type="hidden" name="txnAmount" id="txnAmount" class="form-control" value="">                
+                  <input type="hidden" name="checkSum" id="checkSum" class="form-control" value="">
+            
+                  <button type="submit" class="btn btn-primary hidden" formtarget="_blank" id="ContinueOrder">Complete Order</button>               
+
+                </form>
+              
+                <a class="text-decoration-none hidden ship_retrn" href="/cart">Return to Cart </a>
+              </div>
+
+          </div>
+          <div class="discalimer-txt"></div>
+
+          <div id="Payment" style="display:none">
+            <div class="step__sections">
+                <div class="section">
+                    <div class="content-box">
+                      <div role="table" class="content-box__row content-box__row--tight-spacing-vertical">
+                          <div role="row" class="review-block">
+                            <div class="review-block__inner">
+                                <div role="rowheader" class="review-block__label">
+                                  Contact
+                                </div>
+                                <div role="cell" class="review-block__content">
+                                  <bdo dir="ltr" id="PayContact"></bdo>
+                                </div>
+                            </div>
+                            <div role="cell" class="review-block__link">
+                                <button class="link--small ChangeInfo btn">
+                                <span aria-hidden="true">Change</span>
+                                <span class="visually-hidden">Change contact information</span>
+                                </button>    
+                            </div>
+                          </div>
+                          <div role="row" class="review-block">
+                            <div class="review-block__inner">
+                                <div role="rowheader" class="review-block__label">
+                                  Ship to
+                                </div>
+                                <div role="cell" class="review-block__content">
+                                  <address class="address address--tight" id="PayAdd">
+                                  </address>
+                                </div>
+                            </div>
+                            <div role="cell" class="review-block__link">
+                                <button class="link--small ChangeInfo btn">
+                                  <span aria-hidden="true">Change</span>
+                                  <span class="visually-hidden">Change shipping address</span>
+                                </button>      
+                            </div>
+                          </div>
+                          <div role="row" class="review-block">
+                            <div class="review-block__inner">
+                                <div role="rowheader" class="review-block__label">
+                                  Method
+                                </div>
+                                <div role="cell" class="review-block__content">
+                                  <label dir="ltr" id="ShipMethod"></label>
+                                </div>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                </div>
+              </div>
+          </div>     
+          
+          
+        </div>
+      </div>      
+    </div>
+  </div>
+</div>
+<!-- end CImodel -->
+<!-- OrderModal -->
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary hidden" data-bs-toggle="modal" data-bs-target="#ordermodal" id="reordrbtn">
+  Launch demo modal
+</button>
+<div class="modal fade" id="ordermodal" tabindex="-1" aria-labelledby="ordermodalLabel" aria-hidden="true">
+   <button type="button" class="btn orderclose" data-bs-dismiss="modal"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 416.979 416.979" style="enable-background:new 0 0 416.979 416.979;" xml:space="preserve"><g><path d="M355.914,61.065c-81.42-81.42-213.428-81.42-294.849,0s-81.421,213.427,0,294.849c81.42,81.42,213.428,81.42,294.849,0   C437.334,274.492,437.334,142.485,355.914,61.065z M312.525,258.763c4.454,4.454,4.454,11.675,0,16.129l-37.632,37.632   c-4.454,4.454-11.675,4.453-16.13,0l-50.273-50.275l-50.275,50.275c-4.453,4.455-11.674,4.453-16.128,0l-37.632-37.632   c-4.454-4.454-4.453-11.674,0-16.127l50.275-50.276l-50.275-50.275c-4.453-4.454-4.453-11.675,0-16.128l37.633-37.632   c4.454-4.454,11.675-4.454,16.127,0l50.275,50.275l50.274-50.275c4.454-4.454,11.675-4.454,16.129,0l37.632,37.632   c4.453,4.454,4.454,11.675,0,16.128l-50.275,50.275L312.525,258.763z"></path></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g><g></g></svg></button>
+
+  <div class="modal-dialog">
+    <div class="rightar"><svg data-layer="79fa435b-d74d-4669-acd7-372ad57c6e98" preserveAspectRatio="none" viewBox="0 0 60 60" class="path23" ><path d="M 60 30 C 60 46.56854248046875 46.56854248046875 60 30 60 C 13.43145751953125 60 0 46.56854248046875 0 30 C 0 13.43145751953125 13.43145847320557 0 30 0 C 46.56854248046875 0 60 13.43145847320557 60 30 Z M 45.11167144775391 18.63833618164062 C 44.57043838500977 18.0991039276123 43.83317184448242 17.80318069458008 43.06931686401367 17.81858444213867 C 42.30546951293945 17.83398818969727 41.58072662353516 18.15938758850098 41.06166839599609 18.71999931335449 L 28.03833389282227 35.31333541870117 L 20.19000244140625 27.46166610717773 C 19.07980155944824 26.44276809692383 17.36392974853516 26.47953987121582 16.29840278625488 27.54506683349609 C 15.23287773132324 28.610595703125 15.1961030960083 30.32646942138672 16.21500015258789 31.43666839599609 L 26.13666915893555 41.36166763305664 C 26.67688751220703 41.90069198608398 27.41290855407715 42.19712448120117 28.17591857910156 42.1829833984375 C 28.93892669677734 42.16883850097656 29.66345596313477 41.8453369140625 30.18333053588867 41.28666305541992 L 45.15333557128906 22.57333374023438 C 46.21528244018555 21.46947479248047 46.19898223876953 19.71889877319336 45.11667251586914 18.63500213623047 Z"></path></svg>
+    </div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ordermodalLabel">Order Placed Successfully</h5>
+          <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+      </div>
+      <div class="modal-body">
+        <b class="f-19 dark-text">Order Details</b> 
+        <table class="cart-items border-b">
+          <tbody>
+            
+          </tbody>
+        </table>
+        <b  class="f-19 ship-head dark-text">Shipping Details</b> 
+        <div class="shipdetails border-b">
+          <div class="uname dark-text"></div>
+          <div class="shipadres"></div>
+          <div class="shipphone"></div>
+        </div>
+        <div class="paydetails"></div>         
+        <div class="shiptotal">         
+          <b  class="f-19 dark-text">Total</b><div class="shiptotalamnt right text-blue"></div>
+        </div>
+        
+        
+      </div>
+    <!--   <div class="modal-footer">
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div> -->
+    </div>
+  </div>
+</div>
+  </div>
+</div>
+<!-- End Modal -->
+
+<script>
+var placeSearch, autocomplete;
+  var componentForm = {
+    street_number: 'short_name',   
+    locality: 'long_name',
+    administrative_area_level_1: 'short_name',
+    country: 'long_name',
+    postal_code: 'short_name'
+  };
+
+function initAutocomplete() {
+  // Create the autocomplete object, restricting the search to geographical
+  // location types.
+  autocomplete = new google.maps.places.Autocomplete(
+    /** @type {!HTMLInputElement} */(document.getElementById('inputAddress')),
+    {types: ['geocode']});
+
+  // When the user selects an address from the dropdown, populate the address
+  // fields in the form.
+  autocomplete.addListener('place_changed', fillInAddress);
+}
+
+function fillInAddress() {
+  // Get the place details from the autocomplete object.
+  var place = autocomplete.getPlace();
+
+  for (var component in componentForm) {
+    document.getElementById(component).value = '';
+    document.getElementById(component).disabled = false;
+  }
+
+  // Get each component of the address from the place details
+  // and fill the corresponding field on the form.
+  for (var i = 0; i < place.address_components.length; i++) {
+    var addressType = place.address_components[i].types[0];
+    if (componentForm[addressType]) {
+      var val = place.address_components[i][componentForm[addressType]];
+      document.getElementById(addressType).value = val;
+    }
+  }
+}
+
+// Bias the autocomplete object to the user's geographical location,
+// as supplied by the browser's 'navigator.geolocation' object.
+function geolocate() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var geolocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      var circle = new google.maps.Circle({
+        center: geolocation,
+        radius: position.coords.accuracy
+      });
+      autocomplete.setBounds(circle.getBounds());
+    });
+  }
+}
+  
+
+</script>
